@@ -52,6 +52,27 @@ namespace ElfAndSafety.Services
             user.DateLastModified = DateTime.UtcNow;
             user.Deleted = false;
 
+            // Validate email format
+            if (!IsValidEmail(user.EmailAddress))
+            {
+                throw new ArgumentException("Email address is not valid.");
+            }
+
+            // Duplicate checks (case-insensitive)
+            var existing = (await _repository.GetUsersAsync(null)).ToList();
+            if (existing.Any(u => string.Equals(u.EmailAddress, user.EmailAddress, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new DuplicateUserException("A user with the same email address already exists.");
+            }
+            if (existing.Any(u => string.Equals(u.Username, user.Username, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new DuplicateUserException("A user with the same username already exists.");
+            }
+            if (existing.Any(u => string.Equals(u.FirstName, user.FirstName, StringComparison.OrdinalIgnoreCase) && string.Equals(u.Surname, user.Surname, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new DuplicateUserException("A user with the same first name and surname already exists.");
+            }
+
             var created = await _repository.CreateUserAsync(user);
             return created;
         }
@@ -59,8 +80,50 @@ namespace ElfAndSafety.Services
         public async Task<User> UpdateUserAsync(User user)
         {
             user.DateLastModified = DateTime.UtcNow;
+            // Validate email format
+            if (!IsValidEmail(user.EmailAddress))
+            {
+                throw new ArgumentException("Email address is not valid.");
+            }
+
+            // Duplicate checks (exclude current user id)
+            var existing = (await _repository.GetUsersAsync(null)).ToList();
+            if (existing.Any(u => u.Id != user.Id && string.Equals(u.EmailAddress, user.EmailAddress, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new DuplicateUserException("A user with the same email address already exists.");
+            }
+            if (existing.Any(u => u.Id != user.Id && string.Equals(u.Username, user.Username, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new DuplicateUserException("A user with the same username already exists.");
+            }
+            if (existing.Any(u => u.Id != user.Id && string.Equals(u.FirstName, user.FirstName, StringComparison.OrdinalIgnoreCase) && string.Equals(u.Surname, user.Surname, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new DuplicateUserException("A user with the same first name and surname already exists.");
+            }
+
             var updated = await _repository.UpdateUserAsync(user);
             return updated;
+        }
+
+        private bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+
+            // Practical RFC 5322 regex (simplified but covers most valid cases)
+            // Note: fully strict RFC 5322 regexes are extremely large; this is a pragmatic validation.
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                // MailAddress allows some non-RFC addresses but is generally robust.
+                // Additional regex to enforce common stricter rules:
+                var pattern = @"^(?=.{1,254}$)(?=.{1,64}@)[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@" +
+                              @"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$";
+                return System.Text.RegularExpressions.Regex.IsMatch(email, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<bool> DeleteUserAsync(int id)

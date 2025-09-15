@@ -25,8 +25,21 @@ public class UserController : Controller
     {
         if (ModelState.IsValid)
         {
-            await _userService.CreateUserAsync(user);
-            return Json(new { success = true, message = "User created successfully" });
+            try
+            {
+                await _userService.CreateUserAsync(user);
+                return Json(new { success = true, message = "User created successfully" });
+            }
+            catch (DuplicateUserException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return PartialView("_CreateUserModal", user);
+            }
+            catch (ArgumentException ex)
+            {
+                ModelState.AddModelError("EmailAddress", ex.Message);
+                return PartialView("_CreateUserModal", user);
+            }
         }
 
         return PartialView("_CreateUserModal", user);
@@ -50,8 +63,21 @@ public class UserController : Controller
     {
         if (ModelState.IsValid)
         {
-            await _userService.UpdateUserAsync(user);
-            return Json(new { success = true, message = "User updated successfully" });
+            try
+            {
+                await _userService.UpdateUserAsync(user);
+                return Json(new { success = true, message = "User updated successfully" });
+            }
+            catch (DuplicateUserException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return PartialView("_EditUserModal", user);
+            }
+            catch (ArgumentException ex)
+            {
+                ModelState.AddModelError("EmailAddress", ex.Message);
+                return PartialView("_EditUserModal", user);
+            }
         }
 
         return PartialView("_EditUserModal", user);

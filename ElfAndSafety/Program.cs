@@ -1,12 +1,22 @@
+using ElfAndSafety.Persistence;
 using ElfAndSafety.Services;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Register the user service
-builder.Services.AddSingleton<IUserService, UserService>();
+// Register event bus
+builder.Services.AddSingleton<ElfAndSafety.Persistence.Cqrs.IEventBus, ElfAndSafety.Persistence.Cqrs.InMemoryEventBus>();
+
+// Register the SQLite user repository and initialize DB
+var connectionString = builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=elfandsafety.db";
+SqliteDbInitializer.Initialize(connectionString);
+builder.Services.AddSingleton<IUserRepository>(sp => new SqliteUserRepository(connectionString, sp.GetRequiredService<ElfAndSafety.Persistence.Cqrs.IEventBus>()));
+
+// Register the user service (read-model) which will subscribe to events and use repository for commands
+builder.Services.AddSingleton<IUserService>(sp => new UserService(sp.GetRequiredService<IUserRepository>(), sp.GetRequiredService<ElfAndSafety.Persistence.Cqrs.IEventBus>()));
 
 var app = builder.Build();
 

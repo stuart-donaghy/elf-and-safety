@@ -106,4 +106,16 @@ public class UserController : Controller
 
         return Json(new { success = false, message = "User not found" });
     }
+
+    [HttpPost]
+    public async Task<IActionResult> PermanentDelete(int id)
+    {
+        var success = await _userService.PermanentlyDeleteUserAsync(id);
+        if (success)
+        {
+            return Json(new { success = true, message = "User permanently deleted" });
+        }
+
+        return Json(new { success = false, message = "User not found or could not be deleted" });
+    }
 }

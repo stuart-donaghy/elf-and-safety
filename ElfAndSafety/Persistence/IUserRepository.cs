@@ -10,4 +10,5 @@ public interface IUserRepository
     Task<User> UpdateUserAsync(User user);
     Task<bool> DeleteUserAsync(int id);
     Task<bool> RestoreUserAsync(int id);
+    Task<bool> DeletePermanentAsync(int id);
 }

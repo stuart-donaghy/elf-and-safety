@@ -120,4 +120,20 @@ public class SqliteUserRepository : IUserRepository
 
         return success;
     }
+
+    public async Task<bool> DeletePermanentAsync(int id)
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+
+        var sql = "DELETE FROM Users WHERE Id = @Id";
+        var rows = await conn.ExecuteAsync(sql, new { Id = id });
+        var success = rows > 0;
+        if (success)
+        {
+            _eventBus?.Publish(new ElfAndSafety.Persistence.Cqrs.UserChangedEvent { Type = ElfAndSafety.Persistence.Cqrs.UserEventType.PermanentlyDeleted, UserId = id });
+        }
+
+        return success;
+    }
 }

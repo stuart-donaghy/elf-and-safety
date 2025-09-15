@@ -40,7 +40,7 @@ public class InMemoryEventBus : IEventBus
     }
 }
 
-public enum UserEventType { Created, Updated, Deleted, Restored }
+public enum UserEventType { Created, Updated, Deleted, Restored, PermanentlyDeleted }
 
 public class UserChangedEvent
 {

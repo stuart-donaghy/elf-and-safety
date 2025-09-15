@@ -11,5 +11,6 @@ namespace ElfAndSafety.Services
         Task<User> UpdateUserAsync(User user);
         Task<bool> DeleteUserAsync(int id);
         Task<bool> RestoreUserAsync(int id);
+        Task<bool> PermanentlyDeleteUserAsync(int id);
     }
 }

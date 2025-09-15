@@ -138,6 +138,22 @@ namespace ElfAndSafety.Services
             return result;
         }
 
+        public async Task<bool> PermanentlyDeleteUserAsync(int id)
+        {
+            var result = await _repository.DeletePermanentAsync(id);
+            if (result)
+            {
+                // repository will publish event; ensure local removal if not handled
+                var existing = _users.FirstOrDefault(u => u.Id == id);
+                if (existing != null)
+                {
+                    _users.Remove(existing);
+                }
+            }
+
+            return result;
+        }
+
         private void HandleUserChangedEvent(UserChangedEvent ev)
         {
             if (ev == null) return;
@@ -192,6 +208,16 @@ namespace ElfAndSafety.Services
                         {
                             ru.Deleted = false;
                             ru.DateLastModified = DateTime.UtcNow;
+                        }
+                    }
+                    break;
+                case UserEventType.PermanentlyDeleted:
+                    if (ev.UserId.HasValue)
+                    {
+                        var pu = _users.FirstOrDefault(u => u.Id == ev.UserId.Value);
+                        if (pu != null)
+                        {
+                            _users.Remove(pu);
                         }
                     }
                     break;
